@@ -1,0 +1,37 @@
+# docker-compose.yml
+version: "3.9"
+
+services:
+  paroli:
+    # Provide an image that already has the built paroli-server binary + deps
+    # (e.g., build your own image with /app/build/paroli-server present)
+    image: paroli-local:latest
+    container_name: paroli
+    environment:
+      PAROLI_HOME: /app
+    command: ["/app/paroli_server.sh", "/models/encoder.onnx", "/models/decoder.rknn", "/models/config.json"]
+    volumes:
+      - ./paroli_server.sh:/app/paroli_server.sh:ro
+      - ./build:/app/build:ro          # contains paroli-server binary
+      - ./models:/models:ro            # encoder/decoder/config live here
+      - ./paroli-server:/app/paroli-server:ro
+    ports:
+      - "8848:8848"
+
+  openai-tts-proxy:
+    image: python:3.11-slim
+    container_name: openai-tts-proxy
+    working_dir: /srv/app
+    volumes:
+      - ./openai_tts_proxy.py:/srv/app/openai_tts_proxy.py:ro
+    environment:
+      PAROLI_URL: http://paroli:8848/api/v1/synthesise
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      VOICE_MAP: ${VOICE_MAP:-{}}
+    command: >
+      sh -c "pip install --no-cache-dir fastapi uvicorn[standard] httpx &&
+             uvicorn openai_tts_proxy:app --host 0.0.0.0 --port 3001"
+    depends_on:
+      - paroli
+    ports:
+      - "3001:3001"
