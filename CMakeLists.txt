@@ -13,7 +13,7 @@ if (ORT_ROOT STREQUAL "")
 endif()
 
 include_directories(${ORT_ROOT}/include)
-link_directories(${ORT_ROOT}/lib)
+link_directories(${ORT_ROOT}/lib64)
 
 set(PIPER_PHONEMIZE_ROOT "" CACHE STRING "Path to piper-phonemize root directory")
 if (PIPER_PHONEMIZE_ROOT STREQUAL "")
@@ -21,11 +21,13 @@ if (PIPER_PHONEMIZE_ROOT STREQUAL "")
 endif()
 
 include_directories(${PIPER_PHONEMIZE_ROOT}/include)
+link_directories(${PIPER_PHONEMIZE_ROOT}/lib64)
 link_directories(${PIPER_PHONEMIZE_ROOT}/lib)
 
 find_package(Drogon REQUIRED)
 find_package(fmt REQUIRED)
 find_package(Opus REQUIRED)
+find_package(xtensor REQUIRED)
 
 add_library(piper
     piper/piper.cpp)
@@ -36,6 +38,8 @@ if (USE_RKNN)
     target_link_libraries(piper PRIVATE rknnrt)
 endif()
 target_precompile_headers(piper PRIVATE piper/pch.hpp)
+
+target_link_libraries(piper PRIVATE xtensor)
 
 target_link_libraries(piper
     PRIVATE
